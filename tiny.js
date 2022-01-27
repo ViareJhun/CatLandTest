@@ -66,7 +66,7 @@ let vecInverse = (v) => {
 
 }
 
-let distance = (x1, y1, x2, y2) => {
+let distance = (v1, v2) => {
 
 	return Math.sqrt(
 		Math.pow(v1.x - v2.x, 2) +
@@ -124,6 +124,12 @@ let sign = (x) => {
 	} else {
 		return -1
 	}
+
+}
+
+let lerp = (x, y, t) => {
+
+	return x + (y - x) * t
 
 }
 
@@ -571,6 +577,119 @@ let objectManager = {
 
 }
 
+// Joystick
+let joystick = {
+
+	active: false,
+	sprite: undefined,
+	alpha: 0,
+	screenPosition: Vec(0, 0),
+	position: Vec(0, 0),
+	direction: Vec(0, 0),
+	distance: 128,
+	currentDistance: 0,
+	state: 0,
+	scale: 1,
+
+	setPos(uv) {
+
+		this.screenPosition.x = uv.x * gameSurface.width
+		this.screenPosition.y = uv.y * gameSurface.height
+
+	},
+
+	update() {
+
+		if (gameView.checkMouse)
+		{
+
+			this.state = 1
+			this.direction = vecNorm(
+				Vec(
+					gameView.xMouse - this.screenPosition.x,
+					gameView.yMouse - this.screenPosition.y
+				)
+			)
+
+			let dist = distance(
+				this.screenPosition,
+				Vec(
+					gameView.xMouse,
+					gameView.yMouse
+				)
+			)
+
+			dist = Math.min(this.distance, dist)
+
+			this.position.x = lerp(
+				this.position.x,
+				this.screenPosition.x + this.direction.x * dist,
+				0.4
+			)
+			this.position.y = lerp(
+				this.position.y,
+				this.screenPosition.y + this.direction.y * dist,
+				0.4
+			)
+
+			this.alpha = lerp(this.alpha, 1, 0.1)
+
+			this.currentDistance = dist / this.distance
+
+		} else {
+
+			this.state = 0
+
+			this.position.x = lerp(
+				this.position.x,
+				this.screenPosition.x,
+				0.4
+			)
+			this.position.y = lerp(
+				this.position.y,
+				this.screenPosition.y,
+				0.4
+			)
+
+			this.alpha = lerp(this.alpha, 0.2, 0.1)
+
+			this.currentDistance = 0
+
+		}
+
+	},
+
+	draw() {
+
+		if (this.sprite) {
+
+			gameContext.globalAlpha = this.alpha
+			this.sprite.draw(
+				0,
+				this.screenPosition.x,
+				this.screenPosition.y,
+				0,
+				this.scale,
+				this.scale
+
+			)
+			this.sprite.draw(
+				1,
+				this.position.x,
+				this.position.y,
+				0,
+				this.scale,
+				this.scale
+
+			)
+			gameContext.globalAlpha = 1
+
+		}
+
+	}
+
+}
+
 let Game = {
 
 	start() {
@@ -644,6 +763,13 @@ let sprLegs = Sprite('./img/dLegs', 11)
 let sprCat = Sprite('./img/cats', 8)
 let sprHat = Sprite('./img/hat', 2)
 let sprWeapon = Sprite('./img/weapon', 2)
+let sprJoystick = Sprite('./img/joystick', 2)
+
+joystick.active = true
+joystick.sprite = sprJoystick
+joystick.setPos(Vec(0.5, 0.64))
+joystick.distance = 100
+joystick.scale = 2
 
 let CreateLegs = () => {
 
@@ -691,7 +817,6 @@ let CreateCat = (x, y) => {
 	obj.position.y = y || 0
 	obj.xScale = 2
 	obj.yScale = 2
-	obj.life = 120 + random(540)
 	obj.animationSpeed = 0
 	obj.index = random(obj.sprite.frames - 1)
 	obj.hat = random(2)
@@ -715,16 +840,6 @@ let CreateCat = (x, y) => {
 
 		obj.yScale = 2 + sin(obj.angle * 2) * 0.1
 		obj.xScale = 2 + sin(obj.angle * 2 + pi) * 0.1
-
-		/*
-		if (obj.life > 0) {
-			obj.life --
-		}
-		else
-		{
-			return 1
-		}
-		*/
 
 		return 0
 
@@ -764,12 +879,66 @@ let CreateCat = (x, y) => {
 
 }
 
+let CreatePlayer = (x, y) => {
+
+	let obj = CreateCat(x, y)
+
+	obj.speed = Vec(1, 0)
+	obj.friction = 0.1
+
+	obj.update = () => {
+
+		let isMove = false
+		if (joystick.active) {
+
+			if (joystick.currentDistance > 0.2) {
+
+				isMove = true
+				obj.speed = vecAdd(
+					obj.speed,
+					vecMul(
+						joystick.direction,
+						1
+					)
+				)
+
+			}
+
+		}
+		obj.clampSpeed(3)
+		obj.side = sign(obj.speed.x - 0)
+		if (obj.side == 0) {
+			obj.side = 1
+		}
+
+		obj.step()
+		obj.angle += 0.1
+
+		obj.position.x = mod(obj.position.x, gameSurface.width)
+		obj.position.y = mod(obj.position.y, gameSurface.height)
+
+		if (isMove) {
+			obj.yScale = 2 + sin(obj.angle * 2) * 0.2
+			obj.xScale = 2 + sin(obj.angle * 2 + pi) * 0.2
+		} else {
+			obj.yScale = lerp(obj.xScale, 2, 0.1)
+			obj.xScale = lerp(obj.yScale, 2, 0.1)
+		}
+
+		return 0
+
+	}
+
+	return obj
+
+}
+
 Game.load = () => {
 
 	Game.mouseAngle = 0
 
 	textureLoader.load()
-	for (let i = 0; i < 5; i ++) {
+	for (let i = 0; i < 8; i ++) {
 
 		objectManager.add(
 			CreateCat(random(gameSurface.width), random(gameSurface.height)),
@@ -778,38 +947,28 @@ Game.load = () => {
 
 	}
 
+	objectManager.add(
+		CreatePlayer(
+			gameSurface.width * 0.5,
+			gameSurface.height * 0.5
+		),
+		'cats'
+	)
+
 }
 
 Game.draw = () => {
 
 	Game._draw()
 
-
-	/*
-	Game.mouseAngle += 0.05
-	sprAttack.draw(
-		0,
-		gameView.xMouse,
-		gameView.yMouse,
-		Game.mouseAngle,
-		8
-	)
-	gameContext.font = '10px monospace'
-	let j = 0
-	for (key in objectManager.typeData) {
-		j ++
-		gameContext.fillText(key + objectManager.typeData[key], 0, 32 + j * 32, 400)
-	}
-	*/
+	joystick.update()
+	joystick.draw()
 
 }
 
 gameView.mouseUp = () => {
 
-	objectManager.add(
-		CreateCat(gameView.xMouse, gameView.yMouse),
-		'cats'
-	)
+	// Kavo
 
 }
 
