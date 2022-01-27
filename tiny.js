@@ -159,6 +159,7 @@ let gameView = {
 	yMouse: 0,
 	checkMouse: false,
 	mouseUp: undefined,
+	mouseDown: undefined,
 	mobileDevice: false,
 
 	adapt(pixelated) {
@@ -220,6 +221,10 @@ let gameView = {
 					
 					this.xMouse = (e.changedTouches[0].clientX - this.xOffset) / this.asp
 					this.yMouse = (e.changedTouches[0].clientY - this.yOffset) / this.asp
+
+					if (this.mouseDown) {
+						this.mouseDown()
+					}
 				}
 			)
 			addEventListener(
@@ -248,6 +253,10 @@ let gameView = {
 					if (e.which == 1)
 					{
 						this.checkMouse = true
+
+						if (this.mouseDown) {
+							this.mouseDown()
+						}
 					}
 				}
 			)
@@ -596,13 +605,17 @@ let joystick = {
 		this.screenPosition.x = uv.x * gameSurface.width
 		this.screenPosition.y = uv.y * gameSurface.height
 
+		this.position.x = this.screenPosition.x
+		this.position.y = this.screenPosition.y
+
+		this.state = 0
+
 	},
 
 	update() {
 
 		if (gameView.checkMouse)
 		{
-
 			this.state = 1
 			this.direction = vecNorm(
 				Vec(
@@ -767,7 +780,7 @@ let sprJoystick = Sprite('./img/joystick', 2)
 
 joystick.active = true
 joystick.sprite = sprJoystick
-joystick.setPos(Vec(0.5, 0.64))
+joystick.setPos(Vec(0.5, 0.75))
 joystick.distance = 100
 joystick.scale = 2
 
@@ -966,9 +979,14 @@ Game.draw = () => {
 
 }
 
-gameView.mouseUp = () => {
+gameView.mouseDown = () => {
 
-	// Kavo
+	joystick.setPos(
+		Vec(
+			gameView.xMouse / gameSurface.width,
+			(gameView.yMouse + 2) / gameSurface.height
+		)
+	)
 
 }
 
