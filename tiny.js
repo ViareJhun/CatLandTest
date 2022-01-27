@@ -153,8 +153,16 @@ let gameView = {
 	yMouse: 0,
 	checkMouse: false,
 	mouseUp: undefined,
+	mobileDevice: false,
 
 	adapt(pixelated) {
+
+		if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+		{
+			this.mobileDevice = true
+		} else {
+			this.mobileDevice = false
+		}
 
 		this.asp = innerHeight / gameSurface.height
 
@@ -190,61 +198,67 @@ let gameView = {
 		}
 
 		// Set up input
-		addEventListener(
-			'mousemove',
-			(e) => {
-				this.xMouse = (e.clientX - this.xOffset) / this.asp
-				this.yMouse = (e.clientY - this.yOffset) / this.asp
-			}
-		)
-		addEventListener(
-			'mousedown',
-			(e) => {
-				if (e.which == 1)
-				{
-					this.checkMouse = true
+		if (this.mobileDevice)
+		{
+			addEventListener(
+				'touchmove',
+				(e) => {
+					this.xMouse = (e.changedTouches[0].clientX - this.xOffset) / this.asp
+					this.yMouse = (e.changedTouches[0].clientY - this.yOffset) / this.asp
 				}
-			}
-		)
-		addEventListener(
-			'mouseup',
-			(e) => {
-				if (e.which == 1)
-				{
+			)
+			addEventListener(
+				'touchstart',
+				(e) => {
+					this.checkMouse = true
+					
+					this.xMouse = (e.changedTouches[0].clientX - this.xOffset) / this.asp
+					this.yMouse = (e.changedTouches[0].clientY - this.yOffset) / this.asp
+				}
+			)
+			addEventListener(
+				'touchend',
+				(e) => {
 					this.checkMouse = false
 
 					if (this.mouseUp) {
 						this.mouseUp()
 					}
 				}
-			}
-		)
-		addEventListener(
-			'touchmove',
-			(e) => {
-				this.xMouse = (e.changedTouches[0].clientX - this.xOffset) / this.asp
-				this.yMouse = (e.changedTouches[0].clientY - this.yOffset) / this.asp
-			}
-		)
-		addEventListener(
-			'touchstart',
-			(e) => {
-				this.checkMouse = true
-				
-				this.xMouse = (e.changedTouches[0].clientX - this.xOffset) / this.asp
-				this.yMouse = (e.changedTouches[0].clientY - this.yOffset) / this.asp
-			}
-		)
-		addEventListener(
-			'touchend',
-			(e) => {
-				this.checkMouse = false
-
-				if (this.mouseUp) {
-					this.mouseUp()
+			)
+		}
+		else
+		{
+			addEventListener(
+				'mousemove',
+				(e) => {
+					this.xMouse = (e.clientX - this.xOffset) / this.asp
+					this.yMouse = (e.clientY - this.yOffset) / this.asp
 				}
-			}
-		)
+			)
+			addEventListener(
+				'mousedown',
+				(e) => {
+					if (e.which == 1)
+					{
+						this.checkMouse = true
+					}
+				}
+			)
+			addEventListener(
+				'mouseup',
+				(e) => {
+					if (e.which == 1)
+					{
+						this.checkMouse = false
+
+						if (this.mouseUp) {
+							this.mouseUp()
+						}
+					}
+				}
+			)
+		}
 
 	}
 
