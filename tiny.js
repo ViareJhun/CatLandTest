@@ -717,11 +717,15 @@ let Game = {
 
 	},
 
-	_draw() {
+	_clear() {
 
 		gameContext.fillStyle = Game.backColor
 		gameContext.fillRect(0, 0, gameSurface.width, gameSurface.height)
 		gameContext.fillStyle = '#FFFFFF'
+
+	},
+
+	_draw() {
 
 		objectManager.update()
 		objectManager.draw()
@@ -730,6 +734,7 @@ let Game = {
 
 	draw() {
 
+		Game._clear()
 		Game._draw()
 
 	},
@@ -777,12 +782,107 @@ let sprCat = Sprite('./img/cats', 8)
 let sprHat = Sprite('./img/hat', 2)
 let sprWeapon = Sprite('./img/weapon', 2)
 let sprJoystick = Sprite('./img/joystick', 2)
+let sprD1Floor = Sprite('./img/d1floor', 3)
+let sprD1WallTop = Sprite('./img/d1wallTop', 4)
+let sprD1Wall = Sprite('./img/d1wall', 1)
 
 joystick.active = true
 joystick.sprite = sprJoystick
 joystick.setPos(Vec(0.5, 0.75))
 joystick.distance = 100
 joystick.scale = 2
+
+let tiles = {
+
+	data: [],
+	w: gameSurface.width / (32 * 2),
+	h: Math.ceil(gameSurface.height / (32 * 2)),
+	xScale: 2,
+	yScale: 2,
+	x: 0,
+	y: 0,
+
+	init() {
+
+		for (let i = 0; i < this.w; i ++) {
+			let line = []
+			for (let j = 0; j < this.h; j ++) {
+
+				line.push(
+					{
+						sprite: sprD1Floor,
+						index: 2,
+					}
+				)
+
+			}
+			this.data.push(line)
+		}
+
+	},
+
+	gen() {
+
+		for (let i = 0; i < this.w; i ++) {
+			for (let j = 0; j < this.h; j ++) {
+
+				this.data[i][j].index = choose([0, 1, 2])
+
+				if (i == 0 && (j != 0 && j != this.h - 1)) {
+					this.data[i][j].sprite = sprD1WallTop
+					this.data[i][j].index = 3
+				}
+				if (i == this.w - 1 && (j != 0 && j != this.h - 1)) {
+					this.data[i][j].sprite = sprD1WallTop
+					this.data[i][j].index = 2
+				}
+				if (j == 0 && (i != 0 && i != this.w - 1)) {
+					this.data[i][j].sprite = sprD1WallTop
+					this.data[i][j].index = 1
+				}
+				if (j == this.h - 1 && (i != 0 && i != this.w - 1)) {
+					this.data[i][j].sprite = sprD1WallTop
+					this.data[i][j].index = 0
+				}
+
+				if (i == 0 && (j == 0 || j == this.h - 1)) {
+					this.data[i][j].index = 2
+				}
+				if (i == this.w - 1 && (j == 0 || j == this.h - 1)) {
+					this.data[i][j].index = 2
+				}
+				if (j == 1 && (i != 0 && i != this.w - 1)) {
+					this.data[i][j].sprite = sprD1Wall
+					this.data[i][j].index = 0
+				}
+
+			}
+		}
+
+	},
+
+	draw() {
+
+		gameContext.save()
+		gameContext.translate(this.x, this.y)
+		gameContext.scale(this.xScale, this.yScale)
+		for (let i = 0; i < this.w; i ++) {
+			for (let j = 0; j < this.h; j ++) {
+
+				this.data[i][j].sprite.draw(
+					this.data[i][j].index,
+					i * 32 + 16, j * 32 + 16
+				)
+
+			}
+		}
+		gameContext.restore()
+
+	}
+
+}
+tiles.init()
+tiles.gen()
 
 let CreateLegs = () => {
 
@@ -918,7 +1018,7 @@ let CreatePlayer = (x, y) => {
 			}
 
 		}
-		obj.clampSpeed(3)
+		obj.clampSpeed(2)
 		obj.side = sign(obj.speed.x - 0)
 		if (obj.side == 0) {
 			obj.side = 1
@@ -931,8 +1031,8 @@ let CreatePlayer = (x, y) => {
 		obj.position.y = mod(obj.position.y, gameSurface.height)
 
 		if (isMove) {
-			obj.yScale = 2 + sin(obj.angle * 2) * 0.2
-			obj.xScale = 2 + sin(obj.angle * 2 + pi) * 0.2
+			obj.yScale = 2 + sin(obj.angle * 2) * 0.1
+			obj.xScale = 2 + sin(obj.angle * 2 + pi) * 0.1
 		} else {
 			obj.yScale = lerp(obj.xScale, 2, 0.1)
 			obj.xScale = lerp(obj.yScale, 2, 0.1)
@@ -951,6 +1051,8 @@ Game.load = () => {
 	Game.mouseAngle = 0
 
 	textureLoader.load()
+
+	/*
 	for (let i = 0; i < 8; i ++) {
 
 		objectManager.add(
@@ -959,6 +1061,7 @@ Game.load = () => {
 		)
 
 	}
+	*/
 
 	objectManager.add(
 		CreatePlayer(
@@ -972,8 +1075,9 @@ Game.load = () => {
 
 Game.draw = () => {
 
+	Game._clear()
+	tiles.draw()
 	Game._draw()
-
 	joystick.update()
 	joystick.draw()
 
