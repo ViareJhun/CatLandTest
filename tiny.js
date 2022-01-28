@@ -27,8 +27,8 @@ let vecNorm = (v) => {
 
 	let l = vecLen(v)
 	return Vec(
-		v.x / l,
-		v.y / l
+		(v.x / l) || 0,
+		(v.y / l) || 0
 	)
 
 }
@@ -1098,7 +1098,7 @@ let CreatePlayer = (x, y) => {
 
 	let obj = CreateCat(x, y)
 
-	obj.speed = Vec(1, 0)
+	obj.speed = Vec(0, 0)
 	obj.friction = 0.1
 
 	obj.setHitBox(28, 32)
