@@ -518,6 +518,37 @@ let GameObject = (sprite) => {
 
 		},
 
+		mapCollision(map, x, y) {
+
+			if (
+				map.checkCollision(
+					this.position.x + this.hitBox.x + x,
+					this.position.y + this.hitBox.y + y
+				)
+			) return true
+			if (
+				map.checkCollision(
+					this.position.x + this.hitBox.x + this.hitBox.w + x,
+					this.position.y + this.hitBox.y + y
+				)
+			) return true
+			if (
+				map.checkCollision(
+					this.position.x + this.hitBox.x + x,
+					this.position.y + this.hitBox.y + this.hitBox.h + y
+				)
+			) return true
+			if (
+				map.checkCollision(
+					this.position.x + this.hitBox.x + this.hitBox.w + x,
+					this.position.y + this.hitBox.y + this.hitBox.h + y
+				)
+			) return true
+
+			return false
+
+		},
+
 		drawSelf() {
 
 			this.sprite.draw(
@@ -830,6 +861,13 @@ let tiles = {
 					{
 						sprite: sprD1Floor,
 						index: 2,
+						solid: false,
+						box: {
+							x: 0,
+							y: 0,
+							w: 0,
+							h: 0
+						}
 					}
 				)
 
@@ -849,18 +887,34 @@ let tiles = {
 				if (i == 0 && (j != 0 && j != this.h - 1)) {
 					this.data[i][j].sprite = sprD1WallTop
 					this.data[i][j].index = 3
+
+					this.data[i][j].solid = true
+					this.data[i][j].box.w = 32 * this.xScale
+					this.data[i][j].box.h = 32 * this.yScale
 				}
 				if (i == this.w - 1 && (j != 0 && j != this.h - 1)) {
 					this.data[i][j].sprite = sprD1WallTop
 					this.data[i][j].index = 2
+
+					this.data[i][j].solid = true
+					this.data[i][j].box.w = 32 * this.xScale
+					this.data[i][j].box.h = 32 * this.yScale
 				}
 				if (j == 0 && (i != 0 && i != this.w - 1)) {
 					this.data[i][j].sprite = sprD1WallTop
 					this.data[i][j].index = 1
+
+					this.data[i][j].solid = true
+					this.data[i][j].box.w = 32 * this.xScale
+					this.data[i][j].box.h = 32 * this.yScale
 				}
 				if (j == this.h - 1 && (i != 0 && i != this.w - 1)) {
 					this.data[i][j].sprite = sprD1WallTop
 					this.data[i][j].index = 0
+
+					this.data[i][j].solid = true
+					this.data[i][j].box.w = 32 * this.xScale
+					this.data[i][j].box.h = 32 * this.yScale
 				}
 
 				if (i == 0 && (j == 0 || j == this.h - 1)) {
@@ -872,6 +926,10 @@ let tiles = {
 				if (j == 1 && (i != 0 && i != this.w - 1)) {
 					this.data[i][j].sprite = sprD1Wall
 					this.data[i][j].index = 0
+
+					this.data[i][j].solid = true
+					this.data[i][j].box.w = 32 * this.xScale
+					this.data[i][j].box.h = 16 * this.yScale
 				}
 
 			}
@@ -895,6 +953,32 @@ let tiles = {
 			}
 		}
 		gameContext.restore()
+
+	},
+
+	checkCollision(x, y) {
+
+		let u = Math.floor(x / (32 * this.xScale))
+		let v = Math.floor(y / (32 * this.yScale))
+		if (pntRect(u, v, 0, 0, this.w - 1, this.h - 1)) {
+
+			if (this.data[u][v].solid) {
+
+				let sx = u * (32 * this.xScale)
+				let sy = v * (32 * this.yScale)
+				return pntRect(
+					x, y,
+					sx + this.data[u][v].box.x,
+					sy + this.data[u][v].box.y,
+					this.data[u][v].box.w,
+					this.data[u][v].box.h
+				)
+
+			}
+
+		}
+
+		return false
 
 	}
 
@@ -1017,6 +1101,8 @@ let CreatePlayer = (x, y) => {
 	obj.speed = Vec(1, 0)
 	obj.friction = 0.1
 
+	obj.setHitBox(28, 32)
+
 	obj.update = () => {
 
 		let isMove = false
@@ -1036,10 +1122,17 @@ let CreatePlayer = (x, y) => {
 			}
 
 		}
-		obj.clampSpeed(2)
+		obj.clampSpeed(3)
 		obj.side = sign(obj.speed.x - 0)
 		if (obj.side == 0) {
 			obj.side = 1
+		}
+
+		if (obj.mapCollision(tiles, obj.speed.x, 0)) {
+			obj.speed.x = 0
+		}
+		if (obj.mapCollision(tiles, 0, obj.speed.y)) {
+			obj.speed.y = 0
 		}
 
 		obj.step()
