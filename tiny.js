@@ -157,6 +157,8 @@ let gameView = {
 	yOffset: 0,
 	xMouse: 0,
 	yMouse: 0,
+	xMouseView: 0,
+	yMouseView: 0,
 	checkMouse: false,
 	mouseUp: undefined,
 	mouseDown: undefined,
@@ -274,6 +276,22 @@ let gameView = {
 				}
 			)
 		}
+
+	},
+
+	set() {
+
+		gameContext.save()
+		gameContext.translate(
+			-this.x,
+			-this.y
+		)
+
+	},
+
+	reset() {
+
+		gameContext.restore()
 
 	}
 
@@ -1038,6 +1056,9 @@ let CreatePlayer = (x, y) => {
 			obj.xScale = lerp(obj.yScale, 2, 0.1)
 		}
 
+		gameView.x = lerp(gameView.x, obj.position.x - gameSurface.width / 2, 0.15)
+		gameView.y = lerp(gameView.y, obj.position.y - gameSurface.height / 2, 0.15)
+
 		return 0
 
 	}
@@ -1076,8 +1097,10 @@ Game.load = () => {
 Game.draw = () => {
 
 	Game._clear()
+	gameView.set()
 	tiles.draw()
 	Game._draw()
+	gameView.reset()
 	joystick.update()
 	joystick.draw()
 
